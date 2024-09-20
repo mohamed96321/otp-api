@@ -1,0 +1,215 @@
+{
+  "sigin": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"email\": \"Jq5zK@example.com\",\r\n    \"password\": \"123456\"\r\n}",
+        "data": {
+          "email": "Jq5zK@example.com",
+          "password": "123456"
+        }
+      },
+      "url": {
+        "raw": "http://localhost:5000/api/v1/auth/signin",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "sigin"
+        ]
+      }
+    }
+  },
+  "send-otp-email": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"email\": \"Jq5zK@example.com\"\r\n}",
+        "data": {
+          "email": "Jq5zK@example.com"
+        }
+      },
+      "url": {
+        "raw": "http://localhost:5000/api/v1/services/send-otp-email",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "send-otp"
+        ]
+      }
+    }
+  },
+  "verify-email": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"email\": \"Jq5zK@example.com\",\r\n    \"otpCode\": \"1234\"\r\n}",
+        "data": {
+          "email": "Jq5zK@example.com",
+          "otpCode": "1234"
+        }
+      },
+      "url": {
+        "raw": "http://localhost:5000/api/v1/services/verify-otp",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "verify-otp"
+        ]
+      }
+    }
+  },
+  "send-otp": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"phoneNumber\": \"+919999999999\"\r\n}",
+        "data": {
+          "phoneNumber": "1123456789",
+          "ISD": "+20"
+        }
+      },
+      "url": {
+        "raw": "http://localhost:5000/api/v1/services/send-otp",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "send-otp"
+        ]
+      }
+    }
+  },
+  "verify-otp": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"phoneNumber\": \"+919999999999\",\r\n    \"otpCode\": \"1234\"\r\n}",
+        "data": {
+          "phoneNumber": "1123456789",
+          "ISD": "+20",
+          "otpCode": "1234"
+        }
+      },
+      "url": {
+        "raw": "http://localhost:5000/api/v1/services/verify-otp",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "verify-otp"
+        ]
+      }
+    }
+  },
+  "follow-up-service": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"fullName\": \"alex more\",\r\n  \"userNote\": \"note\",\r\n    \"email\": \"a@a.com\",\r\n  \"addressLineOne\": \"address line 1\",\r\n    \"addressLineTwo\": \"address line 2\",\r\n    \"city\": \"city\",\r\n    \"country\": \"country\"\r\n}",
+        "data": {
+          "fullName": "alex more",
+          "userNote": "note",
+          "email": "a@a.com",
+          "addressLineOne": "address line 1",
+          "addressLineTwo": "address line 2",
+          "city": "city",
+          "country": "country",
+          "periodDate": "2022-01-01",
+          "periodFullTime": "3AM - 9PM"
+        }
+      },
+      "url": {
+        "raw": "http://localhost:5000/api/v1/services/service/:id/follow-up-service",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "follow-up-service"
+        ]
+      }
+    }
+  },
+  "update-service-status": {
+    "request": {
+      "method": "PATCH",
+      "header": [],
+      "body": {
+        "mode": "raw",
+      "url": {
+        "raw": "http://localhost:5000/api/v1/admin/:id/status",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "update-service-status"
+        ]
+      }
+    }
+   }
+  },
+  "get-services-by-status": {
+    "request": {
+      "method": "GET",
+      "header": [],
+      "body": {
+        "mode": "raw",
+      "url": {
+        "raw": "http://localhost:5000/api/v1/admin/status/:status",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "get-services-by-status"
+        ]
+      }
+    }
+   }
+  },
+  "update-service-admin": {
+    "request": {
+      "method": "POST",
+      "header": [],
+      "body": {
+        "mode": "raw",
+        "raw": "{\r\n    \"adminNote\": \"data\",\r\n}",
+        "data": {
+          "adminNote": "data"
+        }
+      },
+
+      "url": {
+        "raw": "http://localhost:5000/api/v1/admin/service/:id/update",
+        "protocol": "http",
+        "host": [
+          "localhost"
+        ],
+        "path": [
+          "update-service-admin"
+        ]
+      }
+    }
+   }
+}
