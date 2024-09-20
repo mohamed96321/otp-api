@@ -1,5 +1,6 @@
 const { DataTypes, Model } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { Op } = require('sequelize');
 const { v4: UUIDV4 } = require('uuid');
 
 class Service extends Model {}
@@ -75,12 +76,53 @@ Service.init({
   status: {
     type: DataTypes.ENUM('pending', 'finished'),
     defaultValue: 'pending',
+    index: true // Indexing the status column
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    index: true // Indexing the updatedAt column
   },
 }, {
   sequelize,
   modelName: 'Service',
   tableName: 'services',
   timestamps: true,
+  indexes: [
+    {
+      fields: ['status', 'updatedAt']
+    }
+  ]
 });
+
+// Function to delete services with status 'finished'
+const removeFinishedServices = async () => {
+  try {
+    const result = await Service.destroy({
+      where: {
+        status: 'finished',
+        updatedAt: {
+          [Op.lt]: new Date(), // Additional condition if needed, like checking if it's older than 5 minutes
+        }
+      }
+    });
+    
+    console.log(`${result} finished service(s) deleted`);
+  } catch (error) {
+    console.error('Error deleting finished services:', error);
+  }
+};
+
+// Function to check every 5 minutes and delete 'finished' services
+const checkAndRemoveFinishedServices = () => {
+  setTimeout(async function run() {
+    await removeFinishedServices(); // Call the function to remove finished services
+    
+    // Set up the timeout to run again in 5 minutes
+    setTimeout(run, 5 * 60 * 1000); // 5 minutes (5 * 60 * 1000 milliseconds)
+  }, 5 * 60 * 1000); // Initial 5-minute delay
+};
+
+// Start the background job when the application starts
+checkAndRemoveFinishedServices();
 
 module.exports = Service;
