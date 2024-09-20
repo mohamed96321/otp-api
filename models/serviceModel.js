@@ -97,11 +97,14 @@ Service.init({
 // Function to delete services with status 'finished'
 const removeFinishedServices = async () => {
   try {
+    const now = new Date();
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
     const result = await Service.destroy({
       where: {
         status: 'finished',
         updatedAt: {
-          [Op.lt]: new Date(), // Additional condition if needed, like checking if it's older than 5 minutes
+          [Op.lt]: sixtyDaysAgo,
         }
       }
     });
@@ -112,14 +115,13 @@ const removeFinishedServices = async () => {
   }
 };
 
-// Function to check every 5 minutes and delete 'finished' services
+// Function to check every 60 days and delete 'finished' services
 const checkAndRemoveFinishedServices = () => {
   setTimeout(async function run() {
     await removeFinishedServices(); // Call the function to remove finished services
     
-    // Set up the timeout to run again in 5 minutes
-    setTimeout(run, 5 * 60 * 1000); // 5 minutes (5 * 60 * 1000 milliseconds)
-  }, 5 * 60 * 1000); // Initial 5-minute delay
+    setTimeout(run, 60 * 24 * 60 * 60 * 1000); 
+  }, 60 * 24 * 60 * 60 * 1000); 
 };
 
 // Start the background job when the application starts
