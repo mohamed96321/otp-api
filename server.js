@@ -1,12 +1,12 @@
 require("dotenv").config();
 const path = require("path");
+const { dbConnection } = require('./config/database');
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const compression = require("compression");
 const helmet = require("helmet");
 const hpp = require("hpp");
-const { connectDB } = require('./config/database');
 const ApiError = require("./utils/apiError");
 const User = require("./models/userModel");
 const globalError = require("./middlewares/errorMiddleware");
@@ -71,7 +71,7 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, async () => {
   console.log(`Server is running on port: ${PORT}`);
 
-  await connectDB();
+  await dbConnection();
 
   try {
     // Create admin users if they don't already exist
