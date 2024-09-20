@@ -76,55 +76,12 @@ Service.init({
   status: {
     type: DataTypes.ENUM('pending', 'finished'),
     defaultValue: 'pending',
-    index: true // Indexing the status column
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    index: true // Indexing the updatedAt column
   },
 }, {
   sequelize,
   modelName: 'Service',
   tableName: 'services',
   timestamps: true,
-  indexes: [
-    {
-      fields: ['status', 'updatedAt']
-    }
-  ]
 });
-
-// Function to delete services with status 'finished'
-const removeFinishedServices = async () => {
-  try {
-    const now = new Date();
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-
-    const result = await Service.destroy({
-      where: {
-        status: 'finished',
-        updatedAt: {
-          [Op.lt]: sixtyDaysAgo,
-        }
-      }
-    });
-    
-    console.log(`${result} finished service(s) deleted`);
-  } catch (error) {
-    console.error('Error deleting finished services:', error);
-  }
-};
-
-// Function to check every 60 days and delete 'finished' services
-const checkAndRemoveFinishedServices = () => {
-  setTimeout(async function run() {
-    await removeFinishedServices(); 
-    
-    setTimeout(run, 60 * 24 * 60 * 60 * 1000); 
-  }, 60 * 24 * 60 * 60 * 1000); 
-};
-
-// Start the background job when the application starts
-checkAndRemoveFinishedServices();
 
 module.exports = Service;

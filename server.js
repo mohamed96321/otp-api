@@ -10,6 +10,7 @@ const { connectDB } = require('./config/database');
 const ApiError = require("./utils/apiError");
 const User = require("./models/userModel");
 const globalError = require("./middlewares/errorMiddleware");
+require('./utils/cronJobs');
 
 // Routes
 const mountRoutes = require("./routes");
