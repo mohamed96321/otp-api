@@ -118,7 +118,7 @@ const removeFinishedServices = async () => {
 // Function to check every 60 days and delete 'finished' services
 const checkAndRemoveFinishedServices = () => {
   setTimeout(async function run() {
-    await removeFinishedServices(); // Call the function to remove finished services
+    await removeFinishedServices(); 
     
     setTimeout(run, 60 * 24 * 60 * 60 * 1000); 
   }, 60 * 24 * 60 * 60 * 1000); 
