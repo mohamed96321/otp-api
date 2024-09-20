@@ -1,47 +1,55 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const { DataTypes, Model } = require('sequelize');
+const { sequelize } = require('../config/database');
+const { v4: UUIDV4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema(
+class User extends Model {}
+
+User.init(
   {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: UUIDV4,
+    },
     name: {
-      type: String,
-      minlength: [2, "Name must be at least 2 characters long"],
-      maxlength: [50, "Name must be less than 50 characters long"],
-      trim: true,
-      index: true, // Indexing first name for faster lookups
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: [2, 50],
+      },
     },
     email: {
-      type: String,
-      required: [true, "Email is required"],
+      type: DataTypes.STRING,
+      allowNull: false,
       unique: true,
-      lowercase: true, // Ensure email is always stored in lowercase
-      trim: true,
-      index: true, // Indexing email for uniqueness and quick lookups
+      validate: {
+        isEmail: true,
+      },
     },
     password: {
-      type: String,
-      required: [true, "Password is required"],
-      minlength: [8, "Password must be at least 8 characters long"],
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: [8],
+      },
     },
     role: {
-      type: String,
-      enum: ["user", "admin"],
-      default: "user",
-      index: true, // Index role for faster queries based on user roles
+      type: DataTypes.ENUM('user', 'admin'),
+      defaultValue: 'user',
     },
   },
   {
+    sequelize,
+    modelName: 'User',
+    tableName: 'users',
     timestamps: true,
   }
 );
 
-// Password hashing middleware
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+// Password hashing hook
+User.beforeCreate(async (user) => {
+  user.password = await bcrypt.hash(user.password, 12);
 });
-
-const User = mongoose.model("User", userSchema);
 
 module.exports = User;

@@ -8,7 +8,7 @@ exports.updateServiceStatus = async (req, res, next) => {
     const { id } = req.params;
 
     // Find the service by ID
-    const service = await Service.findById(id);
+    const service = await Service.findByPk(id);
 
     if (!service) {
       return next(new ApiError('Service not found', 404));
@@ -21,9 +21,7 @@ exports.updateServiceStatus = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       message: 'Service status updated to finished',
-      data: {
-        service
-      }
+      data: { service },
     });
   } catch (error) {
     next(error);
@@ -32,22 +30,28 @@ exports.updateServiceStatus = async (req, res, next) => {
 
 // @desc Get all services by status
 // @route GET /api/services/status/:status
-exports.getServicesByStatus = async (req, res, next) => {
+exports.getAllServicesThatStatusIsFinished = async (req, res, next) => {
   try {
-    const { status } = req.params;
-
-    if (!['pending', 'finished'].includes(status)) {
-      return next(new ApiError('Invalid status', 400));
-    }
-
-    const services = await Service.find({ status });
+    const services = await Service.findAll({ where: { status: 'finished' } });
 
     res.status(200).json({
       status: 'success',
       results: services.length,
-      data: {
-        services
-      }
+      data: { services },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAllServicesThatStatusIsPending = async (req, res, next) => {
+  try {
+    const services = await Service.findAll({ where: { status: 'pending' } });
+
+    res.status(200).json({
+      status: 'success',
+      results: services.length,
+      data: { services },
     });
   } catch (error) {
     next(error);
@@ -62,26 +66,23 @@ exports.updateServiceAdmin = async (req, res, next) => {
     const { id } = req.params;
     const { adminNote } = req.body;
 
-    const service = await Service.findById(id);
+    const service = await Service.findByPk(id);
 
     if (!service) {
-      throw new ApiError("Service not found", 404);
+      return next(new ApiError('Service not found', 404));
     }
 
-    // Check if the phone number has been verified
     if (!service.emailVerified) {
       return next(new ApiError(400, 'Email not verified'));
     }
 
-    // Update the service with the remaining data
+    // Update service details
     service.adminNote = adminNote || service.adminNote;
-    
-    // Save the updated service
     await service.save();
 
     res.status(200).json({
       success: true,
-      message: "Service data updated successfully",
+      message: 'Service data updated successfully',
       data: service,
     });
   } catch (error) {

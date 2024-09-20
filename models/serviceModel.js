@@ -1,70 +1,86 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const { sequelize } = require('../config/database');
+const { v4: UUIDV4 } = require('uuid');
 
-const serviceSchema = new mongoose.Schema({
+class Service extends Model {}
+
+Service.init({
+  id: {
+    type: DataTypes.UUID,
+    primaryKey: true,
+    defaultValue: UUIDV4,
+  },
   type: {
-    type: String,
+    type: DataTypes.STRING,
   },
   phoneNumber: {
-    type: String,
+    type: DataTypes.STRING,
   },
   ISD: {
-    type: String,
+    type: DataTypes.STRING,
   },
   email: {
-    type: String,
+    type: DataTypes.STRING,
   },
   addressLineOne: {
-    type: String,
+    type: DataTypes.STRING,
   },
   addressLineTwo: {
-    type: String,
+    type: DataTypes.STRING,
   },
   city: {
-    type: String,
+    type: DataTypes.STRING,
   },
   periodDate: {
-    type: Date,
+    type: DataTypes.DATEONLY,
   },
   periodFullTime : {
-    type: String,
+    type: DataTypes.STRING,
   },
-  country: {
-    type: String,
+  area: {
+    type: DataTypes.STRING,
+  },
+  street: {
+    type: DataTypes.STRING,
+  },
+  buildingNum: {
+    type: DataTypes.STRING,
+  },
+  flatNum: {
+    type: DataTypes.STRING,
   },
   fullName: {
-    type: String,
+    type: DataTypes.STRING,
   },
   adminNote: {
-    type: String,
+    type: DataTypes.STRING,
   },
   userNote: {
-    type: String,
+    type: DataTypes.STRING,
   },
   otpCode: {
-    type: String,
+    type: DataTypes.STRING,
   },
   otpCodeExpires: {
-    type: Date,
-    index: true,
+    type: DataTypes.DATE,
   },
   phoneVerified: {
-    type: Boolean,
-    default: false,
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
   emailVerified: {
-    type: Boolean,
-    default: false,
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
   status: {
-    type: String,
-    enum: ['pending', 'finished'],
-    default: 'pending',
+    type: DataTypes.ENUM('pending', 'finished'),
+    defaultValue: 'pending',
   },
 }, {
+  sequelize,
+  modelName: 'Service',
+  tableName: 'services',
   timestamps: true,
 });
-
-
-const Service = mongoose.model('Service', serviceSchema);
 
 module.exports = Service;

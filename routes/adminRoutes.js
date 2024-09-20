@@ -1,7 +1,14 @@
 const express = require('express');
-const { updateServiceStatus, getServicesByStatus, updateServiceAdmin } = require('../controllers/adminController');
+const {
+  updateServiceStatus,
+  getAllServicesThatStatusIsFinished,
+  getAllServicesThatStatusIsPending,
+  updateServiceAdmin,
+} = require('../controllers/adminController');
 const authService = require('../services/authService');
-const { createAndUpdateService } = require('../utils/validators/serviceValidator')
+const {
+  createAndUpdateService,
+} = require('../utils/validators/serviceValidator');
 
 const router = express.Router();
 
@@ -13,7 +20,9 @@ router.use(authService.allowedTo('admin'));
 router.patch('/service/:id/status', updateServiceStatus);
 
 // Route to get all services by status
-router.get('/services/:status/status', getServicesByStatus);
+router.get('/get-all-pending-services', getAllServicesThatStatusIsPending);
+
+router.get('/get-all-finished-services', getAllServicesThatStatusIsFinished);
 
 router.post('/service/:id/update', createAndUpdateService, updateServiceAdmin);
 

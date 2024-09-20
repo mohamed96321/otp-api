@@ -1,27 +1,29 @@
 const {
   CognitoIdentityProviderClient,
   AdminInitiateAuthCommand,
-} = require("@aws-sdk/client-cognito-identity-provider");
-const ApiError = require("../utils/apiError");
-const crypto = require("crypto");
-const { sendEmail } = require("../utils/sendEmail");
-const { verifyEmailTemplate } = require("../template/verifyEmail");
+} = require('@aws-sdk/client-cognito-identity-provider');
+const ApiError = require('../utils/apiError');
+const crypto = require('crypto');
+const { sendEmail } = require('../utils/sendEmail');
+const { verifyEmailTemplate } = require('../template/verifyEmail');
+const { Op } = require('sequelize');
 const {
   AdminRespondToAuthChallengeCommand,
-} = require("@aws-sdk/client-cognito-identity-provider");
-const Service = require("../models/serviceModel");
-const { formatPhoneNumber } = require("../helpers/phoneNumber");
-const asyncHandler = require("express-async-handler");
+} = require('@aws-sdk/client-cognito-identity-provider');
+const Service = require('../models/serviceModel');
+const { formatPhoneNumber } = require('../helpers/phoneNumber');
+const asyncHandler = require('express-async-handler');
 
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: "us-west-2",
+  region: 'us-west-2',
 }); // Replace with your region
 
+// Send OTP Code
 exports.sendOTPCode = async (phoneNumber, ISD) => {
   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber); // Format the phone number using your utility
 
   const params = {
-    AuthFlow: "CUSTOM_AUTH", // For OTP handling
+    AuthFlow: 'CUSTOM_AUTH', // For OTP handling
     ClientId: process.env.COGNITO_CLIENT_ID,
     UserPoolId: process.env.COGNITO_USER_POOL_ID,
     AuthParameters: {
@@ -34,19 +36,21 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
     const response = await cognitoClient.send(command);
 
     if (!response || !response.AuthenticationResult) {
-      throw new ApiError("Failed to send OTP", 500);
+      throw new ApiError('Failed to send OTP', 500);
     }
 
     // Optionally, save the OTP code and expiry in your database
     const otpCode = response.AuthenticationResult.AccessToken; // Example (could be replaced)
     const otpCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
 
-    // Update the service model with the OTP code and expiry
-    await Service.updateOne(
-      { phoneNumber: formattedPhoneNumber },
+    // Update the service model with the OTP code and expiry using Sequelize
+    await Service.update(
       {
         otpCode,
         otpCodeExpires,
+      },
+      {
+        where: { phoneNumber: formattedPhoneNumber },
       }
     );
 
@@ -56,21 +60,25 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
   }
 };
 
+// Verify OTP Code
 exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
 
-  const service = await Service.findOne({ phoneNumber: formattedPhoneNumber });
+  const service = await Service.findOne({
+    where: { phoneNumber: formattedPhoneNumber },
+  });
+
   if (!service) {
-    throw new ApiError("Service not found", 404);
+    throw new ApiError('Service not found', 404);
   }
 
   if (service.otpCodeExpires < Date.now()) {
-    throw new ApiError("OTP code has expired", 400);
+    throw new ApiError('OTP code has expired', 400);
   }
 
   // Verify OTP using AWS Cognito
   const params = {
-    ChallengeName: "CUSTOM_CHALLENGE",
+    ChallengeName: 'CUSTOM_CHALLENGE',
     ClientId: process.env.COGNITO_CLIENT_ID,
     ChallengeResponses: {
       USERNAME: formattedPhoneNumber,
@@ -83,14 +91,14 @@ exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
     const response = await cognitoClient.send(command);
 
     if (response.AuthenticationResult) {
-      // Mark the phone number as verified in the database
+      // Mark the phone number as verified in the database using Sequelize
       service.phoneVerified = true;
-      service.status = "finished";
+      service.status = 'finished';
       await service.save();
 
-      return { success: true, message: "Phone number verified successfully" };
+      return { success: true, message: 'Phone number verified successfully' };
     } else {
-      throw new ApiError("OTP verification failed", 400);
+      throw new ApiError('OTP verification failed', 400);
     }
   } catch (error) {
     throw new ApiError(`Failed to verify OTP: ${error.message}`, 500);
@@ -110,7 +118,10 @@ exports.followUpServiceData = async (req, res, next) => {
       addressLineOne,
       addressLineTwo,
       city,
-      country,
+      area,
+      street,
+      buildingNum,
+      flatNum,
       fullName,
       email,
       userNote,
@@ -118,12 +129,12 @@ exports.followUpServiceData = async (req, res, next) => {
       periodFullTime,
       phoneNumber,
       ISD,
+      type,
     } = req.body;
 
-    const service = await Service.findById(id);
-
+    const service = await Service.findByPk(id); // Use Sequelize's `findByPk`
     if (!service) {
-      throw new ApiError("Service not found", 404);
+      throw new ApiError('Service not found', 404);
     }
 
     // Check if the phone number has been verified
@@ -134,27 +145,27 @@ exports.followUpServiceData = async (req, res, next) => {
     const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
 
     // Update the service with the remaining data
-    service.addressLineOne = addressLineOne || service.addressLineOne;
-    service.addressLineTwo = addressLineTwo || service.addressLineTwo;
-    service.city = city || service.city;
-    service.country = country || service.country;
-    service.fullName = fullName || service.fullName;
-    service.email = email || service.email;
-    service.userNote = userNote || service.userNote;
-    service.periodFullTime = periodFullTime || service.periodFullTime;
-    // Save formatted phone number and ISD
-    service.phoneNumber = formattedPhoneNumber || service.phoneNumber;
-    service.ISD = ISD || service.ISD;
-
-    // Update the new period fields
-    service.periodDate = periodDate || service.periodDate;
-  
-    // Save the updated service
-    await service.save();
+    await service.update({
+      addressLineOne: addressLineOne || service.addressLineOne,
+      addressLineTwo: addressLineTwo || service.addressLineTwo,
+      type: type || service.type,
+      city: city || service.city,
+      area: area || service.area,
+      street: street || service.street,
+      fullName: fullName || service.fullName,
+      email: email || service.email,
+      userNote: userNote || service.userNote,
+      periodFullTime: periodFullTime || service.periodFullTime,
+      phoneNumber: formattedPhoneNumber || service.phoneNumber,
+      ISD: ISD || service.ISD,
+      buildingNum: buildingNum || service.buildingNum,
+      flatNum: flatNum || service.flatNum,
+      periodDate: periodDate || service.periodDate,
+    });
 
     res.status(200).json({
       success: true,
-      message: "Service data updated successfully",
+      message: 'Service data updated successfully',
       data: service,
     });
   } catch (error) {
@@ -173,32 +184,37 @@ exports.sendOTPToEmailAddress = asyncHandler(async (req, res, next) => {
 
   // 2) Hash the OTP code before saving it
   const hashedOTPCode = crypto
-    .createHash("sha256")
+    .createHash('sha256')
     .update(otpCode)
-    .digest("hex");
+    .digest('hex');
 
   // 3) Create new service with email, OTP, and expiration
   const service = await Service.create({
     email,
     otpCode: hashedOTPCode,
-    otpCodeExpires: Date.now() + 10 * 60 * 1000, // OTP expires in 10 minutes
+    otpCodeExpires: new Date(Date.now() + 10 * 60 * 1000), // OTP expires in 10 minutes
   });
 
   // 4) Send OTP via email
   try {
     await sendEmail(
       email,
-      "Your OTP Code (Valid for 10 min)",
+      'Your OTP Code (Valid for 10 min)',
       verifyEmailTemplate(otpCode)
     );
-    res.status(200).json({ status: "Success", message: "OTP sent to email" });
+    res.status(200).json({
+      status: 'Success',
+      message: 'OTP sent to email',
+      email,
+      serviceId: service.id, // Use 'id' for Sequelize
+    });
   } catch (error) {
     // If email sending fails, clear the OTP details from the service model
-    service.otpCode = undefined;
-    service.otpCodeExpires = undefined;
+    service.otpCode = null;
+    service.otpCodeExpires = null;
     await service.save();
 
-    return next(new ApiError("Error sending OTP to email", 500));
+    return next(new ApiError('Error sending OTP to email', 500));
   }
 });
 
@@ -210,30 +226,33 @@ exports.verifyEmailAddress = asyncHandler(async (req, res, next) => {
 
   // 1) Hash the input OTP
   const hashedOTPCode = crypto
-    .createHash("sha256")
+    .createHash('sha256')
     .update(otpCode)
-    .digest("hex");
+    .digest('hex');
 
   // 2) Find service by email and valid OTP
   const service = await Service.findOne({
-    email,
-    otpCode: hashedOTPCode,
-    otpCodeExpires: { $gt: Date.now() }, // Ensure OTP is still valid
+    where: {
+      email,
+      otpCode: hashedOTPCode,
+      otpCodeExpires: { [Op.gt]: new Date() }, // Ensure OTP is still valid
+    },
   });
 
   if (!service) {
-    return next(new ApiError("Invalid or expired OTP", 400));
+    return next(new ApiError('Invalid or expired OTP', 400));
   }
 
   // 3) Mark email as verified
   service.emailVerified = true;
-  service.otpCode = undefined; // Clear OTP once verified
-  service.otpCodeExpires = undefined; // Clear expiration
+  service.otpCode = null; // Clear OTP once verified
+  service.otpCodeExpires = null; // Clear expiration
   await service.save();
 
   res.status(200).json({
-    status: "Success",
-    message: "Email successfully verified",
+    status: 'Success',
+    message: 'Email successfully verified',
+    serviceId: service.id,
   });
 });
 

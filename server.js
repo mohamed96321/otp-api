@@ -6,20 +6,14 @@ const cors = require("cors");
 const compression = require("compression");
 const helmet = require("helmet");
 const hpp = require("hpp");
-
-const mongoSanitize = require("express-mongo-sanitize");
+const { connectDB } = require('./config/database');
 const ApiError = require("./utils/apiError");
 const User = require("./models/userModel");
 const globalError = require("./middlewares/errorMiddleware");
-const dbConnection = require("./config/database");
-
 require('./utils/cronJobs');
 
 // Routes
 const mountRoutes = require("./routes");
-
-// Connect with db
-dbConnection();
 
 // Express app
 const app = express();
@@ -55,9 +49,6 @@ app.use(helmet());
 
 app.use(hpp()); // <- THIS IS THE NEW LINE
 
-// Middleware to sanitize user input
-app.use(mongoSanitize());
-
 // Welcome route
 app.get("/", (req, res) => {
   res.status(200).send({
@@ -80,28 +71,28 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, async () => {
   console.log(`Server is running on port: ${PORT}`);
 
+  await connectDB();
+
   try {
     // Create admin users if they don't already exist
     const adminEmails = [process.env.ADMIN_EMAIL_ONE, process.env.ADMIN_EMAIL_TWO];
     for (const email of adminEmails) {
-      const adminExists = await User.findOne({ email: email });
+      const adminExists = await User.findOne({ where: { email } });
 
       if (!adminExists) {
-        const adminUser = new User({
-          name: "Admin",
+        await User.create({
+          name: 'Admin',
           email: email,
           password: process.env.ADMIN_PASSWORD,
-          role: "admin",
+          role: 'admin',
         });
-
-        await adminUser.save();
         console.log(`Admin user created successfully for ${email}.`);
       } else {
         console.log(`Admin user already exists for ${email}.`);
       }
     }
   } catch (error) {
-    console.error("Error creating admin users:", error);
+    console.error('Error creating admin users:', error);
   }
 });
 
