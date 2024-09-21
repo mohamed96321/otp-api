@@ -3,15 +3,17 @@ const { verifyOTPCode, sendOTPCode, followUpServiceData, sendOTPToEmailAddress, 
 const { createAndUpdateService } = require('../utils/validators/serviceValidator')
 
 const router = express.Router();
+
 router.post('/send-otp', async (req, res, next) => {
   try {
     const { phoneNumber, ISD } = req.body;
     const response = await sendOTPCode(phoneNumber, ISD);
-    res.status(200).json({ success: true, message: 'OTP sent successfully' });
+    res.status(200).json(response);
   } catch (error) {
     next(error);
   }
 });
+
 router.post('/verify-otp', async (req, res, next) => {
   try {
     const { phoneNumber, ISD, otpCode } = req.body;
@@ -21,6 +23,7 @@ router.post('/verify-otp', async (req, res, next) => {
     next(error);
   }
 });
+
 router.post('/service/:id/follow-up-service', createAndUpdateService, followUpServiceData);
 
 router.post('/send-otp-email', sendOTPToEmailAddress);

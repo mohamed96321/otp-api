@@ -13,15 +13,15 @@ const {
 const Service = require('../models/serviceModel');
 const { formatPhoneNumber } = require('../helpers/phoneNumber');
 const asyncHandler = require('express-async-handler');
-const { catchError } = require('../middlewares/catchErrorMiddleware');
+const bcrypt = require('bcryptjs');
 
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: 'us-west-2',
-}); // Replace with your region
+  region: process.env.COGNITO_REGION,
+});
 
 // Send OTP Code
 exports.sendOTPCode = async (phoneNumber, ISD) => {
-  const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber); // Format the phone number using your utility
+  const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
 
   const params = {
     AuthFlow: 'CUSTOM_AUTH', // For OTP handling
@@ -40,14 +40,15 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
       throw new ApiError('Failed to send OTP', 500);
     }
 
-    // Optionally, save the OTP code and expiry in your database
-    const otpCode = response.AuthenticationResult.AccessToken; // Example (could be replaced)
+    // Encrypt the OTP code using bcrypt
+    const otpCode = response.AuthenticationResult.AccessToken;
+    const hashedOtpCode = await bcrypt.hash(otpCode, 12);
     const otpCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
 
-    // Update the service model with the OTP code and expiry using Sequelize
-    await Service.update(
+    // Update the service model with the encrypted OTP code and expiry
+    const service = await Service.update(
       {
-        otpCode,
+        otpCode: hashedOtpCode,
         otpCodeExpires,
       },
       {
@@ -55,7 +56,12 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
       }
     );
 
-    return response;
+    return {
+      success: true,
+      message: 'OTP sent successfully',
+      phoneNumber: formattedPhoneNumber,
+      serviceId: service.id,
+    };
   } catch (error) {
     throw new ApiError(`Failed to send OTP: ${error.message}`, 500);
   }
@@ -77,6 +83,12 @@ exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
     throw new ApiError('OTP code has expired', 400);
   }
 
+  // Verify the entered code by comparing with the stored hashed OTP
+  const isMatch = await bcrypt.compare(enteredCode, service.otpCode);
+  if (!isMatch) {
+    throw new ApiError('Invalid OTP code', 400);
+  }
+
   // Verify OTP using AWS Cognito
   const params = {
     ChallengeName: 'CUSTOM_CHALLENGE',
@@ -92,9 +104,10 @@ exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
     const response = await cognitoClient.send(command);
 
     if (response.AuthenticationResult) {
-      // Mark the phone number as verified in the database using Sequelize
+      // Mark the phone number as verified
       service.phoneVerified = true;
-      service.status = 'finished';
+      service.otpCode = null; // Clear OTP once verified
+      service.otpCodeExpires = null; // Clear expiration
       await service.save();
 
       return { success: true, message: 'Phone number verified successfully' };
