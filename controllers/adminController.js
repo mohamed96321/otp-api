@@ -1,9 +1,11 @@
 const Service = require('../models/serviceModel');
 const ApiError = require('../utils/apiError');
+const asyncHandler = require('express-async-handler');
+const { catchError } = require('../middlewares/catchErrorMiddleware');
 
 // @desc Update service status to finished
 // @route PATCH /api/services/:id/status
-exports.updateServiceStatus = async (req, res, next) => {
+exports.updateServiceStatus = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -26,42 +28,46 @@ exports.updateServiceStatus = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 // @desc Get all services by status
 // @route GET /api/services/status/:status
-exports.getAllServicesThatStatusIsFinished = async (req, res, next) => {
-  try {
-    const services = await Service.findAll({ where: { status: 'finished' } });
+exports.getAllServicesThatStatusIsFinished = asyncHandler(
+  async (req, res, next) => {
+    try {
+      const services = await Service.findAll({ where: { status: 'finished' } });
 
-    res.status(200).json({
-      status: 'success',
-      results: services.length,
-      data: { services },
-    });
-  } catch (error) {
-    next(error);
+      res.status(200).json({
+        status: 'success',
+        results: services.length,
+        data: { services },
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-};
+);
 
-exports.getAllServicesThatStatusIsPending = async (req, res, next) => {
-  try {
-    const services = await Service.findAll({ where: { status: 'pending' } });
+exports.getAllServicesThatStatusIsPending = asyncHandler(
+  async (req, res, next) => {
+    try {
+      const services = await Service.findAll({ where: { status: 'pending' } });
 
-    res.status(200).json({
-      status: 'success',
-      results: services.length,
-      data: { services },
-    });
-  } catch (error) {
-    next(error);
+      res.status(200).json({
+        status: 'success',
+        results: services.length,
+        data: { services },
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-};
+);
 
 // @desc    Update service details
 // @route   PUT /api/v1/services/:id
 // @access  Public
-exports.updateServiceAdmin = async (req, res, next) => {
+exports.updateServiceAdmin = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
     const { adminNote } = req.body;
@@ -88,35 +94,25 @@ exports.updateServiceAdmin = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
-// try {
-//   // Find the service by its ID
-//   const service = await Service.findById(id);
+// Get service by ID
+exports.getServiceDetail = catchError(
+  asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
 
-//   if (!service) {
-//     return next(new ApiError(404, 'Service not found'));
-//   }
+    // Find the service by ID
+    const service = await Service.findByPk(id);
 
-//   // Check if the phone number or email has been verified
-//   if (!service.emailVerified) {
-//     return next(new ApiError(400, 'Email not verified'));
-//   }
+    // If no service is found, throw an error
+    if (!service) {
+      return next(new ApiError(`Service not found with id: ${id}`, 404));
+    }
 
-//   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
-
-//   // Update the service with the data provided in the request body
-//   Object.assign(service, updateData);
-
-//   // Save the updated service data
-//   await service.save();
-
-//   res.status(200).json({
-//     status: 'success',
-//     message: 'Service details updated successfully',
-//     data: service,
-//   });
-// } catch (error) {
-//   next(new ApiError(500, 'Failed to update service details'));
-// }
-// };
+    // Respond with the service data
+    res.status(200).json({
+      success: true,
+      data: service,
+    });
+  })
+);

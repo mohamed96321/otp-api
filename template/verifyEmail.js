@@ -5,7 +5,7 @@ exports.verifyEmailTemplate = (resetCode) => {
       <p>Hello,</p>
       <p>We received a request to vreify your email. This code is valid for 10 minutes.</p>
       <div style="text-align: center; margin: 20px 0;">
-        <p style="font-size: 24px; font-weight: bold; color: #FABC3F;">${resetCode}</p>
+        <p style="font-size: 24px; font-weight: bold; color: #333333;">${resetCode}</p>
       </div>
       <p>If you did not request a verification, please ignore this email or contact support if you have any concerns.</p>
       <p>Thank you,</p>

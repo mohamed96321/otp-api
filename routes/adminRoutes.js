@@ -4,6 +4,7 @@ const {
   getAllServicesThatStatusIsFinished,
   getAllServicesThatStatusIsPending,
   updateServiceAdmin,
+  getServiceDetail,
 } = require('../controllers/adminController');
 const authService = require('../services/authService');
 const {
@@ -25,5 +26,7 @@ router.get('/get-all-pending-services', getAllServicesThatStatusIsPending);
 router.get('/get-all-finished-services', getAllServicesThatStatusIsFinished);
 
 router.post('/service/:id/update', createAndUpdateService, updateServiceAdmin);
+
+router.get('/service/:id', getServiceDetail);
 
 module.exports = router;

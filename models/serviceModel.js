@@ -1,6 +1,5 @@
 const { DataTypes, Model } = require('sequelize');
 const { sequelize } = require('../config/database');
-const { Op } = require('sequelize');
 const { v4: UUIDV4 } = require('uuid');
 
 class Service extends Model {}
