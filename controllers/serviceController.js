@@ -1,49 +1,63 @@
-const {
-  CognitoIdentityProviderClient,
-  AdminInitiateAuthCommand,
-} = require('@aws-sdk/client-cognito-identity-provider');
+// const {
+//   CognitoIdentityProviderClient,
+//   AdminInitiateAuthCommand,
+// } = require('@aws-sdk/client-cognito-identity-provider');
+// const {
+//   AdminRespondToAuthChallengeCommand,
+// } = require('@aws-sdk/client-cognito-identity-provider');
+
 const ApiError = require('../utils/apiError');
 const crypto = require('crypto');
 const { sendEmail } = require('../utils/sendEmail');
 const { verifyEmailTemplate } = require('../template/verifyEmail');
 const { Op } = require('sequelize');
-const {
-  AdminRespondToAuthChallengeCommand,
-} = require('@aws-sdk/client-cognito-identity-provider');
 const Service = require('../models/serviceModel');
 const { formatPhoneNumber } = require('../helpers/phoneNumber');
 const asyncHandler = require('express-async-handler');
 const bcrypt = require('bcryptjs');
 
-const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.COGNITO_REGION,
+// Create an SNS client with the specified configuration
+const sns = new SNSClient({
+  region: process.env.AWS_REGION, // AWS region from environment variables
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY, // AWS access key from environment variables
+    secretAccessKey: process.env.AWS_SECRET_KEY, // AWS secret key from environment variables
+  },
 });
+
+// Function to send OTP via AWS SNS
+async function sendSMSMessage(params) {
+  const command = new PublishCommand(params);
+  const message = await sns.send(command);
+  return message;
+}
 
 // Send OTP Code and create service
 exports.sendOTPCode = async (phoneNumber, ISD) => {
   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
+  
+  // Generate a random 6-digit OTP code
+  const otpCode = Math.random().toString().substring(2, 8);
+  
+  // Encrypt the OTP code using bcrypt
+  const hashedOtpCode = await bcrypt.hash(otpCode, 12);
+  const otpCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
 
+  // Define parameters for the SMS message
   const params = {
-    AuthFlow: 'CUSTOM_AUTH', // For OTP handling
-    ClientId: process.env.COGNITO_CLIENT_ID,
-    UserPoolId: process.env.COGNITO_USER_POOL_ID,
-    AuthParameters: {
-      USERNAME: formattedPhoneNumber,
-    },
+    Message: `Your OTP code is: ${otpCode}`,
+    PhoneNumber: formattedPhoneNumber,
+    MessageAttributes: {
+      'AWS.SNS.SMS.SenderID': {
+        'DataType': 'String',
+        'StringValue': 'YourAppName'
+      }
+    }
   };
 
   try {
-    const command = new AdminInitiateAuthCommand(params);
-    const response = await cognitoClient.send(command);
-
-    if (!response || !response.AuthenticationResult) {
-      throw new ApiError('Failed to send OTP', 500);
-    }
-
-    // Encrypt the OTP code using bcrypt
-    const otpCode = response.AuthenticationResult.AccessToken;
-    const hashedOtpCode = await bcrypt.hash(otpCode, 12);
-    const otpCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
+    // Send the OTP via SMS
+    await sendSMSMessage(params);
 
     // Create a new service record with the encrypted OTP code and expiry
     const service = await Service.create({
@@ -63,11 +77,10 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
     throw new ApiError(`Failed to send OTP: ${error.message}`, 500);
   }
 };
-
-// Verify OTP Code
 exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
 
+  // Find the service record for the phone number
   const service = await Service.findOne({
     where: { phoneNumber: formattedPhoneNumber },
   });
@@ -86,35 +99,115 @@ exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
     throw new ApiError('Invalid OTP code', 400);
   }
 
-  // Verify OTP using AWS Cognito
-  const params = {
-    ChallengeName: 'CUSTOM_CHALLENGE',
-    ClientId: process.env.COGNITO_CLIENT_ID,
-    ChallengeResponses: {
-      USERNAME: formattedPhoneNumber,
-      ANSWER: enteredCode, // User-entered OTP code
-    },
-  };
+  // Mark the phone number as verified
+  service.phoneVerified = true;
+  service.otpCode = null; // Clear OTP once verified
+  service.otpCodeExpires = null; // Clear expiration
+  await service.save();
 
-  try {
-    const command = new AdminRespondToAuthChallengeCommand(params);
-    const response = await cognitoClient.send(command);
-
-    if (response.AuthenticationResult) {
-      // Mark the phone number as verified
-      service.phoneVerified = true;
-      service.otpCode = null; // Clear OTP once verified
-      service.otpCodeExpires = null; // Clear expiration
-      await service.save();
-
-      return { success: true, message: 'Phone number verified successfully' };
-    } else {
-      throw new ApiError('OTP verification failed', 400);
-    }
-  } catch (error) {
-    throw new ApiError(`Failed to verify OTP: ${error.message}`, 500);
-  }
+  return { success: true, message: 'Phone number verified successfully' };
 };
+
+// const cognitoClient = new CognitoIdentityProviderClient({
+//   region: process.env.COGNITO_REGION,
+// });
+
+// // Send OTP Code and create service
+// exports.sendOTPCode = async (phoneNumber, ISD) => {
+//   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
+
+//   const params = {
+//     AuthFlow: 'CUSTOM_AUTH', // For OTP handling
+//     ClientId: process.env.COGNITO_CLIENT_ID,
+//     UserPoolId: process.env.COGNITO_USER_POOL_ID,
+//     AuthParameters: {
+//       USERNAME: formattedPhoneNumber,
+//     },
+//   };
+
+//   try {
+//     const command = new AdminInitiateAuthCommand(params);
+//     const response = await cognitoClient.send(command);
+
+//     if (!response || !response.AuthenticationResult) {
+//       throw new ApiError('Failed to send OTP', 500);
+//     }
+
+//     // Encrypt the OTP code using bcrypt
+//     const otpCode = response.AuthenticationResult.AccessToken;
+//     const hashedOtpCode = await bcrypt.hash(otpCode, 12);
+//     const otpCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
+
+//     // Create a new service record with the encrypted OTP code and expiry
+//     const service = await Service.create({
+//       phoneNumber: formattedPhoneNumber,
+//       otpCode: hashedOtpCode,
+//       otpCodeExpires,
+//       ISD,
+//     });
+
+//     return {
+//       success: true,
+//       message: 'OTP sent successfully',
+//       phoneNumber: formattedPhoneNumber,
+//       serviceId: service.id, // Return the service ID
+//     };
+//   } catch (error) {
+//     throw new ApiError(`Failed to send OTP: ${error.message}`, 500);
+//   }
+// };
+
+// // Verify OTP Code
+// exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode) => {
+//   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
+
+//   const service = await Service.findOne({
+//     where: { phoneNumber: formattedPhoneNumber },
+//   });
+
+//   if (!service) {
+//     throw new ApiError('Service not found', 404);
+//   }
+
+//   if (service.otpCodeExpires < Date.now()) {
+//     throw new ApiError('OTP code has expired', 400);
+//   }
+
+//   // Verify the entered code by comparing with the stored hashed OTP
+//   const isMatch = await bcrypt.compare(enteredCode, service.otpCode);
+//   if (!isMatch) {
+//     throw new ApiError('Invalid OTP code', 400);
+//   }
+
+//   // Verify OTP using AWS Cognito
+//   const params = {
+//     ChallengeName: 'CUSTOM_CHALLENGE',
+//     ClientId: process.env.COGNITO_CLIENT_ID,
+//     ChallengeResponses: {
+//       USERNAME: formattedPhoneNumber,
+//       ANSWER: enteredCode, // User-entered OTP code
+//     },
+//   };
+
+//   try {
+//     const command = new AdminRespondToAuthChallengeCommand(params);
+//     const response = await cognitoClient.send(command);
+
+//     if (response.AuthenticationResult) {
+//       // Mark the phone number as verified
+//       service.phoneVerified = true;
+//       service.otpCode = null; // Clear OTP once verified
+//       service.otpCodeExpires = null; // Clear expiration
+//       await service.save();
+
+//       return { success: true, message: 'Phone number verified successfully' };
+//     } else {
+//       throw new ApiError('OTP verification failed', 400);
+//     }
+//   } catch (error) {
+//     throw new ApiError(`Failed to verify OTP: ${error.message}`, 500);
+//   }
+// };
 
 /**
  * Updates service data after phone verification.
