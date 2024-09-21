@@ -19,7 +19,7 @@ const cognitoClient = new CognitoIdentityProviderClient({
   region: process.env.COGNITO_REGION,
 });
 
-// Send OTP Code
+// Send OTP Code and create service
 exports.sendOTPCode = async (phoneNumber, ISD) => {
   const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
 
@@ -45,22 +45,19 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
     const hashedOtpCode = await bcrypt.hash(otpCode, 12);
     const otpCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
 
-    // Update the service model with the encrypted OTP code and expiry
-    const service = await Service.update(
-      {
-        otpCode: hashedOtpCode,
-        otpCodeExpires,
-      },
-      {
-        where: { phoneNumber: formattedPhoneNumber },
-      }
-    );
+    // Create a new service record with the encrypted OTP code and expiry
+    const service = await Service.create({
+      phoneNumber: formattedPhoneNumber,
+      otpCode: hashedOtpCode,
+      otpCodeExpires,
+      ISD,
+    });
 
     return {
       success: true,
       message: 'OTP sent successfully',
       phoneNumber: formattedPhoneNumber,
-      serviceId: service.id,
+      serviceId: service.id, // Return the service ID
     };
   } catch (error) {
     throw new ApiError(`Failed to send OTP: ${error.message}`, 500);
