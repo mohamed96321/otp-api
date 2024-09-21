@@ -5,7 +5,7 @@
 // const {
 //   AdminRespondToAuthChallengeCommand,
 // } = require('@aws-sdk/client-cognito-identity-provider');
-
+const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
 const ApiError = require('../utils/apiError');
 const crypto = require('crypto');
 const { sendEmail } = require('../utils/sendEmail');
