@@ -34,14 +34,14 @@ router.post('/send-otp', asyncHandler(async (req, res) => {
 // @desc    Verify OTP for phone number
 // @access  Public
 router.post('/verify-otp', asyncHandler(async (req, res) => {
-  const { phoneNumber, ISD, otpCode, serviceId } = req.body;
+  const { phoneNumber, otpCode, serviceId } = req.body;
 
-  if (!phoneNumber || !ISD || !otpCode || !serviceId) {
-    return res.status(400).json({ message: 'Phone number, ISD, OTP code, and service ID are required.' });
+  if (!phoneNumber || !otpCode || !serviceId) {
+    return res.status(400).json({ message: 'Phone number, OTP code, and service ID are required.' });
   }
 
   try {
-    const result = await verifyOTPCode(phoneNumber, ISD, otpCode, serviceId);
+    const result = await verifyOTPCode(phoneNumber, otpCode, serviceId);
     res.status(200).json({
       success: true,
       message: 'OTP verified successfully.',

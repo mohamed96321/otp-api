@@ -74,21 +74,19 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
   }
 };
 
-exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode, serviceId) => {
-  const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
-
+exports.verifyOTPCode = async (phoneNumber, enteredCode, serviceId) => {
   // Hash the entered OTP code
   const hashedEnteredCode = crypto
     .createHash('sha256')
     .update(enteredCode)
     .digest('hex');
 
-  // Find the service record for the specific service and phone number, matching the OTP
+  // Find the service record using the service ID and phone number (already formatted)
   const service = await Service.findOne({
     where: {
-      id: serviceId, // Ensure we are verifying the OTP for the correct service
-      phoneNumber: formattedPhoneNumber,
-      otpCode: hashedEnteredCode,
+      id: serviceId, // Match the service ID to ensure correct OTP verification
+      phoneNumber, // Use the formatted phone number
+      otpCode: hashedEnteredCode, // Match hashed OTP
       otpCodeExpires: { [Op.gt]: new Date() }, // Ensure OTP is still valid
     },
   });
@@ -97,9 +95,8 @@ exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode, serviceId) => {
     throw new ApiError('Invalid or expired OTP', 400);
   }
 
-  // Mark the phone number as verified for this specific service
+  // Mark the phone number as verified and clear the OTP fields
   service.phoneVerified = true;
-  service.emailVerified = true;
   service.otpCode = null; // Clear OTP once verified
   service.otpCodeExpires = null; // Clear expiration
   await service.save();
@@ -110,7 +107,6 @@ exports.verifyOTPCode = async (phoneNumber, ISD, enteredCode, serviceId) => {
     serviceId: service.id,
   };
 };
-
 /**
  * Updates service data after phone verification.
  * @param {Object} req - The request object containing service data.
