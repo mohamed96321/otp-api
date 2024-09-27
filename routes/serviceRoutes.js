@@ -1,28 +1,59 @@
 const express = require('express');
-const { verifyOTPCode, sendOTPCode, followUpServiceData, sendOTPToEmailAddress, verifyEmailAddress } = require('../controllers/serviceController');
+const { verifyOTPCode, sendOTPCode, followUpServiceData, sendOTPToEmailAddress , verifyEmailAddress } = require('../controllers/serviceController');
 const { createAndUpdateService } = require('../utils/validators/serviceValidator')
+const asyncHandler = require('express-async-handler');
 
 const router = express.Router();
 
-router.post('/send-otp', async (req, res, next) => {
-  try {
-    const { phoneNumber, ISD } = req.body;
-    const response = await sendOTPCode(phoneNumber, ISD);
-    res.status(200).json(response);
-  } catch (error) {
-    next(error);
-  }
-});
+// @route   POST /api/v1/otp/send
+// @desc    Send OTP to phone number
+// @access  Public
+router.post('/send-otp', asyncHandler(async (req, res) => {
+  const { phoneNumber, ISD } = req.body;
 
-router.post('/verify-otp', async (req, res, next) => {
-  try {
-    const { phoneNumber, ISD, otpCode } = req.body;
-    const response = await verifyOTPCode(phoneNumber, ISD, otpCode);
-    res.status(200).json(response);
-  } catch (error) {
-    next(error);
+  if (!phoneNumber || !ISD) {
+    return res.status(400).json({ message: 'Phone number and ISD code are required.' });
   }
-});
+
+  try {
+    const result = await sendOTPCode(phoneNumber, ISD);
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully.',
+      data: result
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+}));
+
+// @route   POST /api/v1/otp/verify
+// @desc    Verify OTP for phone number
+// @access  Public
+router.post('/verify-otp', asyncHandler(async (req, res) => {
+  const { phoneNumber, ISD, otpCode, serviceId } = req.body;
+
+  if (!phoneNumber || !ISD || !otpCode || !serviceId) {
+    return res.status(400).json({ message: 'Phone number, ISD, OTP code, and service ID are required.' });
+  }
+
+  try {
+    const result = await verifyOTPCode(phoneNumber, ISD, otpCode, serviceId);
+    res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully.',
+      data: result
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message
+    });
+  }
+}));
 
 router.post('/service/:id/follow-up-service', createAndUpdateService, followUpServiceData);
 

@@ -25,7 +25,7 @@ const deleteUnverifiedOrInvalidServices = async () => {
         where: {
           createdAt: { [Op.lte]: thirtyMinutesAgo },
           [Op.or]: [
-            { emailVerified: false },
+            { phoneVerified: false },
             { emailVerified: true, phoneNumber: null }
           ]
         }
