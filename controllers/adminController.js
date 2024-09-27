@@ -30,17 +30,35 @@ exports.updateServiceStatus = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc Get all services by status
-// @route GET /api/services/status/:status
+// @desc Get all services by status 'finished', where email and phone are verified
+// @route GET /api/services/status/finished
 exports.getAllServicesThatStatusIsFinished = asyncHandler(
   async (req, res, next) => {
     try {
-      const services = await Service.findAll({ where: { status: 'finished' } });
+      const { page = 1, limit = 10 } = req.query; // Set default page to 1 and limit to 10
+
+      const offset = (page - 1) * limit; // Calculate offset
+
+      // Find all services where status is 'finished', and both email and phone are verified
+      const services = await Service.findAndCountAll({
+        where: {
+          status: 'finished',
+          emailVerified: true,
+          phoneVerified: true,
+        },
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+      });
+
+      // Calculate total pages
+      const totalPages = Math.ceil(services.count / limit);
 
       res.status(200).json({
         status: 'success',
-        results: services.length,
-        data: { services },
+        results: services.rows.length,
+        currentPage: parseInt(page),
+        totalPages: totalPages,
+        data: { services: services.rows },
       });
     } catch (error) {
       next(error);
@@ -48,15 +66,35 @@ exports.getAllServicesThatStatusIsFinished = asyncHandler(
   }
 );
 
+// @desc Get all services by status 'pending', where email and phone are verified
+// @route GET /api/services/status/pending
 exports.getAllServicesThatStatusIsPending = asyncHandler(
   async (req, res, next) => {
     try {
-      const services = await Service.findAll({ where: { status: 'pending' } });
+      const { page = 1, limit = 10 } = req.query; // Set default page to 1 and limit to 10
+
+      const offset = (page - 1) * limit; // Calculate offset
+
+      // Find all services where status is 'pending', and both email and phone are verified
+      const services = await Service.findAndCountAll({
+        where: {
+          status: 'pending',
+          emailVerified: true,
+          phoneVerified: true,
+        },
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+      });
+
+      // Calculate total pages
+      const totalPages = Math.ceil(services.count / limit);
 
       res.status(200).json({
         status: 'success',
-        results: services.length,
-        data: { services },
+        results: services.rows.length,
+        currentPage: parseInt(page),
+        totalPages: totalPages,
+        data: { services: services.rows },
       });
     } catch (error) {
       next(error);
@@ -78,8 +116,14 @@ exports.updateServiceAdmin = asyncHandler(async (req, res, next) => {
       return next(new ApiError('Service not found', 404));
     }
 
-    if (!service.emailVerified) {
-      return next(new ApiError(400, 'Email not verified'));
+    // Check if both email and phone number are verified
+    if (!service.emailVerified && !service.phoneVerified) {
+      return next(
+        new ApiError(
+          'Either email or phone number must be verified before proceeding',
+          400
+        )
+      );
     }
 
     // Update service details

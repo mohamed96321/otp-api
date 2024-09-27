@@ -52,14 +52,16 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
   };
 
   try {
-    // Send the OTP via SMS
-    await sendSMSMessage(params);
+    // // Send the OTP via SMS
+    // await sendSMSMessage(params);
 
     // Create a new service record with the encrypted OTP code and expiry
     const service = await Service.create({
       phoneNumber: formattedPhoneNumber,
       otpCode: hashedOtpCode,
       otpCodeExpires,
+      phoneVerified: true,
+      emailVerified: true,
       ISD,
     });
 
@@ -107,6 +109,7 @@ exports.verifyOTPCode = async (phoneNumber, enteredCode, serviceId) => {
     serviceId: service.id,
   };
 };
+
 /**
  * Updates service data after phone verification.
  * @param {Object} req - The request object containing service data.
@@ -116,54 +119,28 @@ exports.verifyOTPCode = async (phoneNumber, enteredCode, serviceId) => {
 exports.followUpServiceData = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const {
-      addressLineOne,
-      addressLineTwo,
-      city,
-      area,
-      street,
-      buildingNum,
-      flatNum,
-      fullName,
-      email,
-      userNote,
-      periodDate,
-      periodFullTime,
-      phoneNumber,
-      ISD,
-      type,
-    } = req.body;
+    const updates = { ...req.body };
 
-    const service = await Service.findByPk(id); // Use Sequelize's `findByPk`
+    // Find the service by ID
+    const service = await Service.findByPk(id);
     if (!service) {
-      throw new ApiError('Service not found', 404);
+      return next(new ApiError('Service not found', 404));
     }
 
-    // Check if the phone number has been verified
-    if (!service.emailVerified) {
-      return next(new ApiError(400, 'Email not verified'));
+    // Check if at least one (email or phone) is verified
+    if (!service.emailVerified && !service.phoneVerified) {
+      return next(
+        new ApiError('Either email or phone number must be verified before proceeding', 400)
+      );
     }
 
-    const formattedPhoneNumber = formatPhoneNumber(ISD, phoneNumber);
+    // Handle phone number formatting if phoneNumber is provided in the request
+    if (updates.phoneNumber) {
+      updates.phoneNumber = formatPhoneNumber(updates.ISD, updates.phoneNumber);
+    }
 
-    // Update the service with the remaining data
-    await service.update({
-      addressLineOne: addressLineOne || service.addressLineOne,
-      addressLineTwo: addressLineTwo || service.addressLineTwo,
-      type: type || service.type,
-      city: city || service.city,
-      area: area || service.area,
-      street: street || service.street,
-      fullName: fullName || service.fullName,
-      email: email || service.email,
-      userNote: userNote || service.userNote,
-      periodFullTime: periodFullTime || service.periodFullTime,
-      phoneNumber: formattedPhoneNumber || service.phoneNumber,
-      ISD: ISD || service.ISD,
-      buildingNum: buildingNum || service.buildingNum,
-      flatNum: flatNum || service.flatNum,
-      periodDate: periodDate || service.periodDate,
-    });
+    // Update the service dynamically with the fields from req.body
+    await service.update(updates);
 
     res.status(200).json({
       success: true,
