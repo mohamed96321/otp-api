@@ -52,16 +52,14 @@ exports.sendOTPCode = async (phoneNumber, ISD) => {
   };
 
   try {
-    // // Send the OTP via SMS
-    // await sendSMSMessage(params);
+    // Send the OTP via SMS
+    await sendSMSMessage(params);
 
     // Create a new service record with the encrypted OTP code and expiry
     const service = await Service.create({
       phoneNumber: formattedPhoneNumber,
       otpCode: hashedOtpCode,
       otpCodeExpires,
-      phoneVerified: true,
-      emailVerified: true,
       ISD,
     });
 
