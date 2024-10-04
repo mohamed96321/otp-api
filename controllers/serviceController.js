@@ -3,6 +3,7 @@ const ApiError = require('../utils/apiError');
 const crypto = require('crypto');
 const { sendEmail } = require('../utils/sendEmail');
 const { verifyEmailTemplate } = require('../template/verifyEmail');
+const { sendServiceCodeTemplate } = require('../template/sendServiceCode');
 const { Op } = require('sequelize');
 const Service = require('../models/serviceModel');
 const { formatPhoneNumber } = require('../helpers/phoneNumber');
@@ -118,31 +119,41 @@ exports.followUpServiceData = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
-
-    // Find the service by ID
     const service = await Service.findByPk(id);
+
     if (!service) {
       return next(new ApiError('Service not found', 404));
     }
 
-    // Check if at least one (email or phone) is verified
     if (!service.emailVerified && !service.phoneVerified) {
-      return next(
-        new ApiError('Either email or phone number must be verified before proceeding', 400)
-      );
+      return next(new ApiError('Email or phone number must be verified before proceeding', 400));
     }
 
-    // Handle phone number formatting if phoneNumber is provided in the request
-    if (updates.phoneNumber) {
-      updates.phoneNumber = formatPhoneNumber(updates.ISD, updates.phoneNumber);
-    }
+    // Generate a random service inquiry code
+    const serviceCode = crypto.randomBytes(4).toString('hex');
 
-    // Update the service dynamically with the fields from req.body
+    // Hash the serviceCode before saving it
+    const hashedServiceCode = crypto
+      .createHash('sha256')
+      .update(serviceCode)
+      .digest('hex');
+
+    // Update the service dynamically with new hashed service code
+    updates.serviceCode = hashedServiceCode;
+    
+    // Create a message to send to the user with the original serviceCode
+    const message = `We would like to inform you that your service '${updates.type}' is currently in '${service.status}' status.`;
+    updates.message = message;
+
     await service.update(updates);
+
+    // Send email with service inquiry code
+    const emailContent = sendServiceCodeTemplate(service.fullName, updates.type, serviceCode);
+    await sendEmail(service.email, 'Service Inquiry Code', emailContent);
 
     res.status(200).json({
       success: true,
-      message: 'Service data updated successfully',
+      message: 'Service data updated, inquiry code generated, and email sent',
       data: service,
     });
   } catch (error) {
@@ -233,4 +244,43 @@ exports.verifyEmailAddress = asyncHandler(async (req, res, next) => {
     message: 'Email successfully verified',
     serviceId: service.id,
   });
+});
+
+// @desc    Inquire service by code
+// @route   POST /api/v1/services/inquire
+exports.inquireServiceByCode = asyncHandler(async (req, res, next) => {
+  try {
+    const { code } = req.params;  // Get the service code from URL parameters
+
+    if (!code) {
+      return next(new ApiError('Service code is required', 400));
+    }
+
+    // Hash the input service code before searching
+    const hashedCode = crypto
+      .createHash('sha256')
+      .update(code)
+      .digest('hex');
+
+    // Find service by hashed serviceCode (not id)
+    const service = await Service.findOne({ where: { serviceCode: hashedCode } });
+
+    if (!service) {
+      return next(new ApiError('Service not found', 404));
+    }
+
+    // Respond with the service details
+    res.status(200).json({
+      success: true,
+      message: 'Service retrieved successfully',
+      data: {
+        fullName: service.fullName,
+        message: service.message,
+        status: service.status,
+        adminNote: service.adminNote,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 });

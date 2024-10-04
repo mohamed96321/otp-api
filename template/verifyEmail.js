@@ -9,7 +9,7 @@ exports.verifyEmailTemplate = (resetCode) => {
       </div>
       <p>If you did not request a verification, please ignore this email or contact support if you have any concerns.</p>
       <p>Thank you,</p>
-      <p>Support Team</p>
+      <p>Noor Support Team</p>
     </div>
   `;
 };

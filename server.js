@@ -19,22 +19,14 @@ const mountRoutes = require("./routes");
 const app = express();
 
 // Cors
-app.use(cors(
-  {
-    origin: process.env.BASE_CLIENT_URL,
-    credentials: true,
-    methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }
-));
-app.options('*', cors());
+app.use(cors());
 
 // Compress all responses
 app.use(compression());
 
 // Body parser
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "uploads")));

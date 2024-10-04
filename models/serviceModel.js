@@ -52,6 +52,12 @@ Service.init({
   fullName: {
     type: DataTypes.STRING,
   },
+  serviceCode: {
+    type: DataTypes.STRING,
+  },
+  message: {
+    type: DataTypes.TEXT,  // Change from STRING to TEXT to allow longer messages
+  },
   adminNote: {
     type: DataTypes.STRING,
   },
@@ -73,7 +79,7 @@ Service.init({
     defaultValue: false,
   },
   status: {
-    type: DataTypes.ENUM('pending', 'finished'),
+    type: DataTypes.ENUM('pending', 'in-progress', 'finished', 'cancelled'),
     defaultValue: 'pending',
   },
 }, {
