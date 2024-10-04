@@ -129,6 +129,13 @@ exports.followUpServiceData = async (req, res, next) => {
       return next(new ApiError('Email or phone number must be verified before proceeding', 400));
     }
 
+    // Use email from updates if provided, otherwise use service email
+    const emailToSend = updates.email || service.email;
+    
+    if (!emailToSend) {
+      return next(new ApiError('Email is required to send the service inquiry code', 400));
+    }
+
     // Generate a random service inquiry code
     const serviceCode = crypto.randomBytes(4).toString('hex');
 
@@ -149,8 +156,8 @@ exports.followUpServiceData = async (req, res, next) => {
 
     // Send email with service inquiry code
     const emailContent = sendServiceCodeTemplate(service.fullName, updates.type, serviceCode);
-    await sendEmail(service.email, 'Service Inquiry Code', emailContent);
-
+    await sendEmail(emailToSend, 'Service Inquiry Code', emailContent);
+    
     res.status(200).json({
       success: true,
       message: 'Service data updated, inquiry code generated, and email sent',
