@@ -2,7 +2,8 @@ const Service = require('../models/serviceModel');
 const ApiError = require('../utils/apiError');
 const asyncHandler = require('express-async-handler');
 const { sendEmail } = require('../utils/sendEmail');
-const { updateStatusEmailTemplate } = require('../template/updateStatusEmail');
+const { updateStatusEmailTemplate } = require('../templates/updateStatusEmail');
+const { inProgressUpdateTemplate } = require('../templates/inProgressUpdate');
 const { catchError } = require('../middlewares/catchErrorMiddleware');
 
 // Helper function to update service status
@@ -65,6 +66,7 @@ const getAllServicesByStatus = asyncHandler(async (req, res, next, status) => {
     },
     limit: parseInt(limit),
     offset: parseInt(offset),
+    order: [['createdAt', 'DESC']],
   });
 
   // Calculate total pages
@@ -220,4 +222,52 @@ exports.updateServiceStatusToInProgressNotify = asyncHandler((req, res, next) =>
 // Example usage for updating to 'finished' status
 exports.updateServiceStatusToFinishedNotify = asyncHandler((req, res, next) => {
   return updateServiceStatusAndNotify(req, res, next, 'finished');
+});
+
+// Helper function to handle in-progress notifications and save message
+const inProgressNotify = asyncHandler(async (req, res, next, updateMessage) => {
+  const { id } = req.params;
+  const service = await Service.findByPk(id);
+
+  if (!service) {
+    return next(new ApiError('Service not found', 404));
+  }
+
+  if(service.status !== 'in-progress') {
+    return next(new ApiError('Service is not in-progress', 400));
+  }
+
+  // Generate the message based on the specific action
+  const message = `Your service '${service.type}' is now in progress: ${updateMessage}`;
+  service.message = message;
+
+  await service.save(); // Save the updated service with new status and message
+
+  // Send email with the in-progress status update
+  const emailContent = inProgressUpdateTemplate(service.fullName, message);
+  await sendEmail(service.email, 'Service In-Progress Update', emailContent);
+
+  res.status(200).json({
+    success: true,
+    message: `Service status updated to in-progress with update: ${updateMessage} and email notification sent.`,
+    data: { service },
+  });
+});
+
+// Controller for "someone will contact you" update
+exports.inProgressContactNotify = asyncHandler((req, res, next) => {
+  const updateMessage = 'Someone will contact you shortly.';
+  return inProgressNotify(req, res, next, updateMessage);
+});
+
+// Controller for "someone is coming to you" update
+exports.inProgressComingNotify = asyncHandler((req, res, next) => {
+  const updateMessage = 'Someone is on their way to you.';
+  return inProgressNotify(req, res, next, updateMessage);
+});
+
+// Controller for "someone is here" update
+exports.inProgressHereNotify = asyncHandler((req, res, next) => {
+  const updateMessage = 'Someone has arrived at your location.';
+  return inProgressNotify(req, res, next, updateMessage);
 });
