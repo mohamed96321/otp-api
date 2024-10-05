@@ -241,6 +241,7 @@ exports.deleteService = asyncHandler(async (req, res, next) => {
     message: 'Service deleted successfully',
   });
 });
+
 // Helper function to update service status, save message, and send email
 const updateServiceStatusAndNotify = asyncHandler(
   async (req, res, next, status) => {
@@ -254,14 +255,11 @@ const updateServiceStatusAndNotify = asyncHandler(
     // Update the service status
     service.status = status;
 
-    const URL = 'https://norhomecare.com/contact';
-
     // Generate a custom message based on the status
     let message = `The status of your service '${service.type}' has been updated to: ${status}.`;
 
-    // Add URL to the message if the status is 'cancelled'
     if (status.toLowerCase() === 'cancelled') {
-      message = `We are sorry, but your service '${service.type}' has been cancelled. We will review our service to solve this problem. If you have any questions, please contact us at ${URL}.`;
+      message = `We are sorry, but your service '${service.type}' has been cancelled. We will review our service to solve this problem.`;
     }
 
     // Update the service with the message
