@@ -60,11 +60,12 @@ Service.init({
   },
   adminNoteOne: {
     type: DataTypes.TEXT,
-    allowNull: true,
   },
   adminNoteTwo: {
     type: DataTypes.TEXT,
-    allowNull: true,
+  },
+  adminMessage: {
+    type: DataTypes.TEXT,
   },
   userNote: {
     type: DataTypes.TEXT,

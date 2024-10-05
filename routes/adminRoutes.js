@@ -17,6 +17,7 @@ const {
   updateServiceStatusToCancelledNotify,
   inProgressComingNotify,
   inProgressContactNotify,
+  sendAdminEmail,
   getAllAdminNote,
   inProgressHereNotify,
 } = require('../controllers/adminController');
@@ -112,5 +113,8 @@ router.patch(
   '/service/:id/status/in-progress-notify/here',
   inProgressHereNotify
 );
+
+// Router send email
+router.post('/send-email', sendAdminEmail);
 
 module.exports = router;

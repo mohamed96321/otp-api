@@ -52,7 +52,7 @@ const deleteOldFinishedServices = async () => {
   try {
     const finishedServicesCount = await Service.count({
       where: {
-        status: 'finished',
+        status: 'تم الانتهاء',
         updatedAt: {
           [Op.lt]: sixtyDaysAgo
         }
@@ -64,7 +64,7 @@ const deleteOldFinishedServices = async () => {
 
       const result = await Service.destroy({
         where: {
-          status: 'finished',
+          status: 'تم الانتهاء',
           updatedAt: {
             [Op.lt]: sixtyDaysAgo
           }

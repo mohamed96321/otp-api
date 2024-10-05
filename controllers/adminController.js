@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const { sendEmail } = require('../utils/sendEmail');
 const { updateStatusEmailTemplate } = require('../templates/updateStatusEmail');
 const { inProgressUpdateTemplate } = require('../templates/inProgressUpdate');
+const { adminSendEmailTemplate } = require('../templates/adminSendEmail');
 const { catchError } = require('../middlewares/catchErrorMiddleware');
 const { Op } = require('sequelize');
 
@@ -343,4 +344,42 @@ exports.inProgressComingNotify = asyncHandler((req, res, next) => {
 exports.inProgressHereNotify = asyncHandler((req, res, next) => {
   const updateMessage = 'Someone has arrived at your location.';
   return inProgressNotify(req, res, next, updateMessage);
+});
+
+// Function to send admin email
+exports.sendAdminEmail = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { body } = req.body; // Ensure the request has 'body'
+
+  // Find the service by ID
+  const service = await Service.findByPk(id);
+
+  if (!service) {
+    return next(new ApiError('Service not found', 404));
+  }
+
+  // Ensure the service is 'in-progress'
+  if (service.status !== 'in-progress') {
+    return next(new ApiError('Service is not in-progress', 400));
+  }
+
+  // Update the adminMessage with the provided body
+  service.adminMessage = body;
+
+  await service.save(); // Make sure to await saving the service
+
+  // Generate the email content using the template
+  const emailContent = adminSendEmailTemplate(service.fullName, body);
+
+  try {
+    // Send email to the service email
+    await sendEmail(service.email, 'Service Status Update', emailContent);
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin email sent successfully.',
+    });
+  } catch (error) {
+    next(new ApiError('Failed to send email', 500));
+  }
 });
