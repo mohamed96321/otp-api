@@ -9,7 +9,8 @@ const {
   getAllServicesThatStatusIsInProgress,
   getAllServicesThatStatusIsPending,
   getServiceDetail,
-  updateServiceAdmin,
+  addAdminNoteOne,
+  addAdminNoteTwo,
   deleteService,
   updateServiceStatusToFinishedNotify,
   updateServiceStatusToInProgressNotify,
@@ -34,7 +35,10 @@ router.use(authService.allowedTo('admin'));
 router.patch('/service/:id/status/pending', updateServiceStatusToPending);
 
 // Route to update service status to 'in-progress'
-router.patch('/service/:id/status/in-progress', updateServiceStatusToInProgress);
+router.patch(
+  '/service/:id/status/in-progress',
+  updateServiceStatusToInProgress
+);
 
 // Route to update service status to 'finished'
 router.patch('/service/:id/status/finished', updateServiceStatusToFinished);
@@ -42,11 +46,20 @@ router.patch('/service/:id/status/finished', updateServiceStatusToFinished);
 // Route to update service status to 'cancelled'
 router.patch('/service/:id/status/cancelled', updateServiceStatusToCancelled);
 
-router.patch('/service-notify/:id/status/in-progress', updateServiceStatusToInProgressNotify);
+router.patch(
+  '/service-notify/:id/status/in-progress',
+  updateServiceStatusToInProgressNotify
+);
 
-router.patch('/service-notify/:id/status/finished', updateServiceStatusToFinishedNotify);
+router.patch(
+  '/service-notify/:id/status/finished',
+  updateServiceStatusToFinishedNotify
+);
 
-router.patch('/service-notify/:id/status/cancelled', updateServiceStatusToCancelledNotify);
+router.patch(
+  '/service-notify/:id/status/cancelled',
+  updateServiceStatusToCancelledNotify
+);
 
 // Route to get all services with 'pending' status
 router.get('/service/status/pending', getAllServicesThatStatusIsPending);
@@ -67,18 +80,37 @@ router.get('/service/:id', getServiceDetail);
 router.get('/services/service/get-all-admin-notes', getAllAdminNote);
 
 // Route to update service details by admin
-router.put('/service/:id/update', createAndUpdateService, updateServiceAdmin);
+router.put(
+  '/service/:id/admin-note-one',
+  createAndUpdateService,
+  addAdminNoteOne
+);
+
+router.put(
+  '/service/:id/admin-note-two',
+  createAndUpdateService,
+  addAdminNoteTwo
+);
 
 // Route to delete a service by ID
 router.delete('/service/:id/delete', deleteService);
 
 // Route to send email when service status is 'in-progress'
-router.patch('/service/:id/status/in-progress-notify/coming', inProgressComingNotify);
-
-// Route to send email when service status is 'in-progress' 
-router.patch('/service/:id/status/in-progress-notify/contact', inProgressContactNotify);
+router.patch(
+  '/service/:id/status/in-progress-notify/coming',
+  inProgressComingNotify
+);
 
 // Route to send email when service status is 'in-progress'
-router.patch('/service/:id/status/in-progress-notify/here', inProgressHereNotify);
+router.patch(
+  '/service/:id/status/in-progress-notify/contact',
+  inProgressContactNotify
+);
+
+// Route to send email when service status is 'in-progress'
+router.patch(
+  '/service/:id/status/in-progress-notify/here',
+  inProgressHereNotify
+);
 
 module.exports = router;

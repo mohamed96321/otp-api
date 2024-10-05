@@ -56,13 +56,18 @@ Service.init({
     type: DataTypes.STRING,
   },
   message: {
-    type: DataTypes.TEXT,  // Change from STRING to TEXT to allow longer messages
+    type: DataTypes.TEXT,
   },
-  adminNote: {
-    type: DataTypes.STRING,
+  adminNoteOne: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  adminNoteTwo: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
   userNote: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
   },
   otpCode: {
     type: DataTypes.STRING,

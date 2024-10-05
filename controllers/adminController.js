@@ -117,43 +117,44 @@ exports.getAllServicesThatStatusIsCancelled = asyncHandler(
     return getAllServicesByStatus(req, res, next, 'cancelled');
   }
 );
+// Helper function to update admin notes
+const updateAdminNote = asyncHandler(async (req, res, next, noteType) => {
+  const { id } = req.params;
+  const noteValue = req.body[noteType];
 
-// @desc    Update service details
-// @route   PUT /api/v1/services/:id
-// @access  Public
-exports.updateServiceAdmin = asyncHandler(async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { adminNote } = req.body;
-
     const service = await Service.findByPk(id);
 
     if (!service) {
       return next(new ApiError('Service not found', 404));
     }
 
-    // Check if both email and phone number are verified
-    if (!service.emailVerified && !service.phoneVerified) {
-      return next(
-        new ApiError(
-          'Either email or phone number must be verified before proceeding',
-          400
-        )
-      );
-    }
-
-    // Update service details
-    service.adminNote = adminNote || service.adminNote;
+    // Update the specified admin note
+    service[noteType] = noteValue || service[noteType];
     await service.save();
 
     res.status(200).json({
       success: true,
-      message: 'Service data updated successfully',
+      message: `${noteType} updated successfully`,
       data: service,
     });
   } catch (error) {
     next(error);
   }
+});
+
+// @desc    Add or update admin note one for a service
+// @route   PUT /api/v1/services/:id/admin-note-one
+// @access  Public (or change to admin-only if required)
+exports.addAdminNoteOne = asyncHandler((req, res, next) => {
+  return updateAdminNote(req, res, next, 'adminNoteOne');
+});
+
+// @desc    Add or update admin note two for a service
+// @route   PUT /api/v1/services/:id/admin-note-two
+// @access  Public (or change to admin-only if required)
+exports.addAdminNoteTwo = asyncHandler((req, res, next) => {
+  return updateAdminNote(req, res, next, 'adminNoteTwo');
 });
 
 // get all adminNote for all services
@@ -164,11 +165,20 @@ exports.getAllAdminNote = asyncHandler(async (req, res, next) => {
 
     // Find all services where status is dynamic, and both email and phone are verified
     const services = await Service.findAndCountAll({
-      attributes: ['id', 'adminNote', 'status', 'type', 'email', 'createdAt'],
+      attributes: [
+        'id',
+        'adminNoteOne',
+        'adminNoteTwo',
+        'status',
+        'type',
+        'email',
+        'createdAt',
+      ],
       where: {
-        adminNote: {
-          [Op.ne]: null, // Sequelize operator for 'not equal to null'
-        },
+        [Op.or]: [
+          { adminNoteOne: { [Op.ne]: null } },
+          { adminNoteTwo: { [Op.ne]: null } },
+        ],
       },
       limit: parseInt(limit),
       offset: parseInt(offset),
