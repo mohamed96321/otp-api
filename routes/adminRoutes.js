@@ -13,8 +13,10 @@ const {
   deleteService,
   updateServiceStatusToFinishedNotify,
   updateServiceStatusToInProgressNotify,
+  updateServiceStatusToCancelledNotify,
   inProgressComingNotify,
   inProgressContactNotify,
+  getAllAdminNote,
   inProgressHereNotify,
 } = require('../controllers/adminController');
 const authService = require('../services/authService');
@@ -44,6 +46,8 @@ router.patch('/service-notify/:id/status/in-progress', updateServiceStatusToInPr
 
 router.patch('/service-notify/:id/status/finished', updateServiceStatusToFinishedNotify);
 
+router.patch('/service-notify/:id/status/cancelled', updateServiceStatusToCancelledNotify);
+
 // Route to get all services with 'pending' status
 router.get('/service/status/pending', getAllServicesThatStatusIsPending);
 
@@ -58,6 +62,9 @@ router.get('/service/status/cancelled', getAllServicesThatStatusIsCancelled);
 
 // Route to get service details by ID
 router.get('/service/:id', getServiceDetail);
+
+// Route to get all admin notes
+router.get('/services/service/get-all-admin-notes', getAllAdminNote);
 
 // Route to update service details by admin
 router.put('/service/:id/update', createAndUpdateService, updateServiceAdmin);
