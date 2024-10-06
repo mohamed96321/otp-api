@@ -10,8 +10,6 @@ exports.verifyEmailTemplate = (resetCode) => {
       <p>إذا لم تطلب التحقق، يرجى تجاهل هذا البريد الإلكتروني أو التواصل مع الدعم إذا كان لديك أي استفسار.</p>
       <p>إذا كان لديك أي استفسارات، لا تتردد في <a href="https://norhomecare.com/contact" style="color: #0066cc; text-decoration: none;">التواصل معنا</a>.</p>
       <p>(Noor) شكرًا لاختيارك نور،</p>
-      <p>البريد الإلكتروني: LcQDQ@example.com</p>
-      <p>الهاتف: 123-456-7890</p>
       <p>(Noor) فريق دعم نور</p>
     </div>
   `;

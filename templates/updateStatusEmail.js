@@ -5,9 +5,8 @@ exports.updateStatusEmailTemplate = (fullName, message) => {
       <p>مرحبًا ${fullName},</p>
       <p>${message}</p>
       <p>إذا كان لديك أي استفسارات، لا تتردد في <a href="https://norhomecare.com/contact" style="color: #0066cc; text-decoration: none;">التواصل معنا</a>.</p>
+      <p>تابع خدمتك من خلال هذا الرابط<a href="https://norhomecare.com/FollowUp" style="color: #0066cc; text-decoration: none;">تابع هنا</a>.</p>
       <p>(Noor) شكرًا لاختيارك نور،</p>
-      <p>البريد الإلكتروني: LcQDQ@example.com</p>
-      <p>الهاتف: 123-456-7890</p>
       <p>(Noor) فريق دعم نور</p>
     </div>
   `;

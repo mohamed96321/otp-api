@@ -292,10 +292,23 @@ exports.inquireServiceByCode = asyncHandler(async (req, res, next) => {
       success: true,
       message: 'Service retrieved successfully',
       data: {
+        id: service.id,
+        area: service.area,
+        type: service.type,
+        email: service.email,
+        phoneNumber: service.phoneNumber,
         fullName: service.fullName,
         message: service.message,
         status: service.status,
         adminMessage: service.adminMessage,
+        addressLineOne: service.addressLineOne,
+        addressLineTwo: service.addressLineTwo,
+        city: service.city,
+        periodDate: service.periodDate,
+        periodFullTime: service.periodFullTime,
+        street: service.street,
+        buildingNum: service.buildingNum,
+        flatNum: service.flatNum,
       },
     });
   } catch (error) {

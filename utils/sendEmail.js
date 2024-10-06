@@ -13,7 +13,7 @@ exports.sendEmail = async (to, subject, htmlContent) => {
 
   try {
     await transporter.sendMail({
-      from: `"OTP API" <${process.env.USER_EMAIL}>`,
+      from: `"Nor Home Care" <${process.env.USER_EMAIL}>`,
       to,
       subject,
       html: htmlContent,
