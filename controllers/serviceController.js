@@ -149,14 +149,14 @@ exports.followUpServiceData = async (req, res, next) => {
     updates.serviceCode = hashedServiceCode;
     
     // Create a message to send to the user with the original serviceCode
-    const message = `We would like to inform you that your service is currently in '${service.status}' status.`;
+    const message = `نود إبلاغكم بأن خدمتكم حاليًا في حالة معلقة سوف نقوم بالعمل عليها في اقرب وقت`;
     updates.message = message;
 
     await service.update(updates);
 
     // Send email with service inquiry code
     const emailContent = sendServiceCodeTemplate(service.fullName, serviceCode);
-    await sendEmail(emailToSend, 'Service Inquiry Code', emailContent);
+    await sendEmail(emailToSend, 'رمز الاستعلام عن الخدمة', emailContent);
     
     res.status(200).json({
       success: true,
@@ -194,7 +194,7 @@ exports.sendOTPToEmailAddress = asyncHandler(async (req, res, next) => {
   try {
     await sendEmail(
       email,
-      'Your OTP Code (Valid for 10 min)',
+      'تاكيد الايمبل الالكتروني',
       verifyEmailTemplate(otpCode)
     );
     res.status(200).json({
