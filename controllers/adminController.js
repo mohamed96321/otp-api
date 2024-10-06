@@ -8,6 +8,27 @@ const { adminSendEmailTemplate } = require('../templates/adminSendEmail');
 const { catchError } = require('../middlewares/catchErrorMiddleware');
 const { Op } = require('sequelize');
 
+// Helper function to generate service status messages
+const generateServiceStatusMessage = (status) => {
+  let message = 'خدمتك قيد المراجعة نحن حريصون على انهائها في أقرب وقت.';
+
+  switch (status.toLowerCase()) {
+    case 'in-progress':
+      message = 'خدمتك قيد التنفيذ.';
+      break;
+    case 'finished':
+      message = 'تم الانتهاء من خدمتك.';
+      break;
+    case 'cancelled':
+      message = 'نعتذر، لقد تم إلغاء خدمتك. سنقوم بمراجعة الخدمة لحل المشكلة.';
+      break;
+    default:
+      message = 'خدمتك قيد المراجعة نحن حريصون على انهائها في أقرب وقت.';
+  }
+
+  return message;
+};
+
 // Helper function to update service status
 const updateServiceStatus = asyncHandler(async (req, res, next, status) => {
   const { id } = req.params;
@@ -19,8 +40,15 @@ const updateServiceStatus = asyncHandler(async (req, res, next, status) => {
     return next(new ApiError('Service not found', 404));
   }
 
-  // Update the status
+  // Update the service status
   service.status = status;
+
+  // Generate message using the helper function
+  const message = generateServiceStatusMessage(status);
+
+  // Save the updated service
+  service.message = message;
+
   await service.save();
 
   res.status(200).json({
@@ -256,12 +284,8 @@ const updateServiceStatusAndNotify = asyncHandler(
     // Update the service status
     service.status = status;
 
-    // Generate a custom message based on the status
-    let message = `The status of your service '${service.type}' has been updated to: ${status}.`;
-
-    if (status.toLowerCase() === 'cancelled') {
-      message = `We are sorry, but your service '${service.type}' has been cancelled. We will review our service to solve this problem.`;
-    }
+    // Generate message using the helper function
+    const message = generateServiceStatusMessage(status);
 
     // Update the service with the message
     service.message = message;
@@ -270,7 +294,7 @@ const updateServiceStatusAndNotify = asyncHandler(
 
     // Send email with status update
     const emailContent = updateStatusEmailTemplate(service.fullName, message);
-    await sendEmail(service.email, 'Service Status Update', emailContent);
+    await sendEmail(service.email, 'تحديث حالة الخدمة', emailContent);
 
     res.status(200).json({
       success: true,
@@ -312,14 +336,19 @@ const inProgressNotify = asyncHandler(async (req, res, next, updateMessage) => {
   }
 
   // Generate the message based on the specific action
-  const message = `Your service '${service.type}' is now in progress: ${updateMessage}`;
+  const message = `خدمتك قيد التنفيذ الآن: ${updateMessage}`;
+
   service.message = message;
 
   await service.save(); // Save the updated service with new status and message
 
   // Send email with the in-progress status update
   const emailContent = inProgressUpdateTemplate(service.fullName, message);
-  await sendEmail(service.email, 'Service In-Progress Update', emailContent);
+  await sendEmail(
+    service.email,
+    'تحديث حالة الخدمة (قيد التنفيذ)',
+    emailContent
+  );
 
   res.status(200).json({
     success: true,
@@ -329,20 +358,21 @@ const inProgressNotify = asyncHandler(async (req, res, next, updateMessage) => {
 });
 
 // Controller for "someone will contact you" update
-exports.inProgressContactNotify = asyncHandler((req, res, next) => {
-  const updateMessage = 'Someone will contact you shortly.';
+exports.inProgressLocationNotify = asyncHandler((req, res, next) => {
+  const updateMessage = 'الفني قد وصل إلى موقعك وسيبدأ العمل على الفور. شكرًا لتعاونك.';
   return inProgressNotify(req, res, next, updateMessage);
 });
 
 // Controller for "someone is coming to you" update
-exports.inProgressComingNotify = asyncHandler((req, res, next) => {
-  const updateMessage = 'Someone is on their way to you.';
+exports.inProgressWayNotify = asyncHandler((req, res, next) => {
+  const updateMessage = 'الفني في طريقه إلى موقعك الآن. شكرًا لتعاونك';
   return inProgressNotify(req, res, next, updateMessage);
 });
 
 // Controller for "someone is here" update
-exports.inProgressHereNotify = asyncHandler((req, res, next) => {
-  const updateMessage = 'Someone has arrived at your location.';
+exports.inProgressInsureNotify = asyncHandler((req, res, next) => {
+  const updateMessage = 'طلبكم في انتظار تأكيد الصيانة من قبلكم. يرجى تأكيد الطلب عن طريق الاتصال بخدمة العملاء - نور - لنتمكن من خدمتك. شكرًا لاختيارك نور';
+  
   return inProgressNotify(req, res, next, updateMessage);
 });
 
@@ -373,7 +403,7 @@ exports.sendAdminEmail = asyncHandler(async (req, res, next) => {
 
   try {
     // Send email to the service email
-    await sendEmail(service.email, 'Service Status Update', emailContent);
+    await sendEmail(service.email, 'تحديث حالة الخدمة', emailContent);
 
     res.status(200).json({
       success: true,

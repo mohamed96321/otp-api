@@ -15,11 +15,11 @@ const {
   updateServiceStatusToFinishedNotify,
   updateServiceStatusToInProgressNotify,
   updateServiceStatusToCancelledNotify,
-  inProgressComingNotify,
-  inProgressContactNotify,
+  inProgressLocationNotify,
+  inProgressWayNotify,
   sendAdminEmail,
   getAllAdminNote,
-  inProgressHereNotify,
+  inProgressInsureNotify,
 } = require('../controllers/adminController');
 const authService = require('../services/authService');
 const {
@@ -98,23 +98,23 @@ router.delete('/service/:id/delete', deleteService);
 
 // Route to send email when service status is 'in-progress'
 router.patch(
-  '/service/:id/status/in-progress-notify/coming',
-  inProgressComingNotify
+  '/service/:id/status/in-progress-notify/insure',
+  inProgressInsureNotify
 );
 
 // Route to send email when service status is 'in-progress'
 router.patch(
-  '/service/:id/status/in-progress-notify/contact',
-  inProgressContactNotify
+  '/service/:id/status/in-progress-notify/location',
+  inProgressLocationNotify
 );
 
 // Route to send email when service status is 'in-progress'
 router.patch(
-  '/service/:id/status/in-progress-notify/here',
-  inProgressHereNotify
+  '/service/:id/status/in-progress-notify/way',
+  inProgressWayNotify
 );
 
 // Router send email
-router.post('/send-email', sendAdminEmail);
+router.post('/service/:id/send-email', sendAdminEmail);
 
 module.exports = router;

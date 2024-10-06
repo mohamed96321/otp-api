@@ -1,17 +1,18 @@
 exports.verifyEmailTemplate = (resetCode) => {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #dddddd; border-radius: 10px; background-color: #f9f9f9;">
-      <h2 style="color: #333333;">Verify Your Email</h2>
-      <p>Hello,</p>
-      <p>We received a request to vreify your email. This code is valid for 10 minutes.</p>
+      <h2 style="color: #333333;">تأكيد بريدك الإلكتروني</h2>
+      <p>مرحباً،</p>
+      <p>لقد تلقينا طلبًا لتأكيد بريدك الإلكتروني. هذا الرمز صالح لمدة 10 دقائق.</p>
       <div style="text-align: center; margin: 20px 0;">
         <p style="font-size: 24px; font-weight: bold; color: #333333;">${resetCode}</p>
       </div>
-      <p>If you did not request a verification, please ignore this email or contact support if you have any concerns.</p>
-      <p>Thank you,</p>
-      <p>Email: LcQDQ@example.com</p>
-      <p>Phone: 123-456-7890</p>
-      <p>Noor Support Team</p>
+      <p>إذا لم تطلب التحقق، يرجى تجاهل هذا البريد الإلكتروني أو التواصل مع الدعم إذا كان لديك أي استفسار.</p>
+      <p>إذا كان لديك أي استفسارات، لا تتردد في <a href="https://norhomecare.com/contact" style="color: #0066cc; text-decoration: none;">التواصل معنا</a>.</p>
+      <p>(Noor) شكرًا لاختيارك نور،</p>
+      <p>البريد الإلكتروني: LcQDQ@example.com</p>
+      <p>الهاتف: 123-456-7890</p>
+      <p>(Noor) فريق دعم نور</p>
     </div>
   `;
 };

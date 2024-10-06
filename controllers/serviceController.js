@@ -149,13 +149,13 @@ exports.followUpServiceData = async (req, res, next) => {
     updates.serviceCode = hashedServiceCode;
     
     // Create a message to send to the user with the original serviceCode
-    const message = `We would like to inform you that your service '${updates.type}' is currently in '${service.status}' status.`;
+    const message = `We would like to inform you that your service is currently in '${service.status}' status.`;
     updates.message = message;
 
     await service.update(updates);
 
     // Send email with service inquiry code
-    const emailContent = sendServiceCodeTemplate(service.fullName, updates.type, serviceCode);
+    const emailContent = sendServiceCodeTemplate(service.fullName, serviceCode);
     await sendEmail(emailToSend, 'Service Inquiry Code', emailContent);
     
     res.status(200).json({
@@ -284,7 +284,7 @@ exports.inquireServiceByCode = asyncHandler(async (req, res, next) => {
         fullName: service.fullName,
         message: service.message,
         status: service.status,
-        adminNote: service.adminNote,
+        adminMessage: service.adminMessage,
       },
     });
   } catch (error) {
