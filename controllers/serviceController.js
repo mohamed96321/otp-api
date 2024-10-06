@@ -126,18 +126,30 @@ exports.followUpServiceData = async (req, res, next) => {
     }
 
     if (!service.emailVerified && !service.phoneVerified) {
-      return next(new ApiError('Email or phone number must be verified before proceeding', 400));
+      return next(
+        new ApiError(
+          'Email or phone number must be verified before proceeding',
+          400
+        )
+      );
+    }
+
+    // Format phone number if updates include phoneNumber and ISD
+    if (updates.phoneNumber && updates.ISD) {
+      updates.phoneNumber = formatPhoneNumber(updates.ISD, updates.phoneNumber);
     }
 
     // Use email from updates if provided, otherwise use service email
     const emailToSend = updates.email || service.email;
-    
+
     if (!emailToSend) {
-      return next(new ApiError('Email is required to send the service inquiry code', 400));
+      return next(
+        new ApiError('Email is required to send the service inquiry code', 400)
+      );
     }
 
     // Generate a random service inquiry code
-    const serviceCode = crypto.randomBytes(4).toString('hex');
+    const serviceCode = crypto.randomBytes(6).toString('hex');
 
     // Hash the serviceCode before saving it
     const hashedServiceCode = crypto
@@ -147,9 +159,9 @@ exports.followUpServiceData = async (req, res, next) => {
 
     // Update the service dynamically with new hashed service code
     updates.serviceCode = hashedServiceCode;
-    
+
     // Create a message to send to the user with the original serviceCode
-    const message = `نود إبلاغكم بأن خدمتكم حاليًا في حالة معلقة سوف نقوم بالعمل عليها في اقرب وقت`;
+    const message = `نود إبلاغكم بأن خدمتكم حاليًا قيد المراجعة. سوف نقوم بالعمل عليها في اقرب وقت`;
     updates.message = message;
 
     await service.update(updates);
@@ -157,7 +169,7 @@ exports.followUpServiceData = async (req, res, next) => {
     // Send email with service inquiry code
     const emailContent = sendServiceCodeTemplate(service.fullName, serviceCode);
     await sendEmail(emailToSend, 'رمز الاستعلام عن الخدمة', emailContent);
-    
+
     res.status(200).json({
       success: true,
       message: 'Service data updated, inquiry code generated, and email sent',
@@ -257,20 +269,19 @@ exports.verifyEmailAddress = asyncHandler(async (req, res, next) => {
 // @route   POST /api/v1/services/inquire
 exports.inquireServiceByCode = asyncHandler(async (req, res, next) => {
   try {
-    const { code } = req.params;  // Get the service code from URL parameters
+    const { code } = req.params; // Get the service code from URL parameters
 
     if (!code) {
       return next(new ApiError('Service code is required', 400));
     }
 
     // Hash the input service code before searching
-    const hashedCode = crypto
-      .createHash('sha256')
-      .update(code)
-      .digest('hex');
+    const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
 
     // Find service by hashed serviceCode (not id)
-    const service = await Service.findOne({ where: { serviceCode: hashedCode } });
+    const service = await Service.findOne({
+      where: { serviceCode: hashedCode },
+    });
 
     if (!service) {
       return next(new ApiError('Service not found', 404));
