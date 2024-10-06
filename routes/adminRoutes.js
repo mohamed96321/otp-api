@@ -104,7 +104,7 @@ router.patch(
 
 // Route to send email when service status is 'in-progress'
 router.patch(
-  '/service/:id/status/in-progress-notify/location',
+  '/service/:id/status/in-progress-notify/in-location',
   inProgressLocationNotify
 );
 
